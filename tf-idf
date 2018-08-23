@@ -1,0 +1,77 @@
+import tensorflow as tf
+import numpy as np
+import math
+import collections
+import re
+import jieba
+import os
+import os.path as path
+
+class word2vec():
+    def __init__(self,
+                 vocab_list=None,
+                 embedding_size=200,
+                 win_len = 3,   # 预测值左右滑动三个word
+                 learning_rate=1,
+                 num_sampled=100):
+        self.batch_size = None
+        assert type(vocab_list)  ==list
+        self.vocab_list = vocab_list
+        self.vocab_size = vocab_list._len_()
+        self.win_len = win_len
+        self.num_sampled = num_sampled
+        self.learning_rate = learning_rate
+
+        self.word2id = {}
+        for i in range(self.vocab_size):
+            self.word2id[self.vocab_list[i]] = i
+
+        self.train_words_num = 0
+        self.train_sentence_num = 0
+        self.train_times = 0
+
+    self.build_graph()
+
+
+    def build_graph(self):
+        self.graph = tf.Graph()
+        with self.graph.as_default():
+            self.train_inputs = tf.placeholder(tf.int32, shape=[self.batch_size])
+            self.train_labels = tf.placeholder(tf.int32, shape=[self.batch_size,1])
+
+
+
+if __name__ == '__main__':
+    stop_words = []    # 停用词
+    with open('stop_words.txt', encoding= 'utf-8') as f:
+        line = f.readline()
+        while line:    # 只要line里有东西
+            stop_words.append(line[:-1])  # 把停用词存进来，最后一个\n不要
+            line = f.readline()    # 读出line
+        stop_words = set(stop_words)  # set函数把重复值去掉
+
+        raw_word_list = []      # 行数据列表
+        sentence_list = []      # 句子列表
+        with open('小说.txt', encoding= 'utf-8') as f:    # 打开文本预料
+            line = f.readline()   # 把line读进来
+            while line:  # 当line里有数据
+                while '\n' in line:           # 当line中存在换行符
+                   line = f.replace('\n', '')  # 用replace函数吧\n替换无
+                   if len(line) > 0:            # line的长度大于零
+                       raw_words = line(jieba.cut(line))
+                       # 进行结巴分词，分词完的结果传到list中去，相当于得到一个个词
+                       dealed_words = []                #
+                       for word in raw_words:           # 所有分词后的word拿出来
+                           if word not in stop_words:   # 判断word不在停用词中就要这个词
+                               raw_word_list.append(word) # 判断word不在停用词中就要这个词
+                               dealed_words.append(word)  # 处理完的词
+                       sentence_list.append(dealed_words)  # 一行接一行的sentence——list
+                   line.readline()  # 一行接一行读下去
+        word_count = collections.Counter(raw_word_list)  # collections统计所有raw_word_list中词的词频
+        word_count = word_count.most_common(30000)  # 过滤掉频率低的词   怎么语料库中的词：set()后面查word
+        word_list = [x[0] for x in word_count]  # wordcount是个两列数组（词，词频），只要词那列，拿到所有的词。
+
+        w2v = word2vec(vocab_list=word_list,
+                       embedding_size = 200,
+                       learning_rate = 1,
+                       num_sampled = 100)
